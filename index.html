@@ -1,38 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Fast Net ISP Panel</title>
-  <style>
-    body { font-family: Arial; padding:20px }
-    input, button { margin:5px; padding:6px; width:95% }
-    button { background:#0a7cff; color:#fff; border:none }
-    .box { max-width:400px; margin:auto; border:1px solid #ccc; padding:15px }
-  </style>
+<meta charset="UTF-8">
+<title>ISP Admin Panel</title>
+<style>
+body{font-family:Arial;background:#f2f2f2}
+.box{background:#fff;padding:15px;margin:10px auto;max-width:420px}
+input,select,button{width:100%;padding:8px;margin:5px 0}
+button{background:#0a7cff;color:#fff;border:none}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ccc;padding:5px;font-size:13px}
+</style>
 </head>
 <body>
 
+<!-- LOGIN -->
 <div class="box" id="loginBox">
-  <h2>Admin Login</h2>
-  <input id="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
+<h3>Admin Login</h3>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
 </div>
 
+<!-- PANEL -->
 <div class="box" id="panel" style="display:none">
-  <h2>Add Customer / Bill</h2>
+<h3>Add Customer</h3>
 
-  <input id="c_name" placeholder="Customer Name">
-  <input id="c_package" placeholder="Package (20MB)">
-  <input id="c_month" placeholder="Month (Jan 2025)">
-  <input id="c_amount" type="number" placeholder="Amount">
-  <input id="c_phone" placeholder="Phone">
-  <input id="c_address" placeholder="Address">
+<input id="name" placeholder="Customer Name">
+<input id="phone" placeholder="Phone">
+<input id="address" placeholder="Address">
+<input id="package" placeholder="Package (20MB)">
+<input id="month" placeholder="Month (Jan 2025)">
+<input id="amount" type="number" placeholder="Amount">
 
-  <button onclick="saveData()">Save Data</button>
+<select id="status">
+<option value="Paid">Paid</option>
+<option value="Due">Due</option>
+</select>
+
+<button onclick="saveCustomer()">Save Customer</button>
+
+<hr>
+<h3>Customer List</h3>
+<table id="table">
+<tr>
+<th>Name</th><th>Pkg</th><th>Month</th><th>Amt</th><th>Status</th>
+</tr>
+</table>
 </div>
 
-<!-- Firebase CDN -->
+<!-- Firebase v8 -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -43,41 +60,58 @@ const firebaseConfig = {
   authDomain: "admin1310.firebaseapp.com",
   projectId: "admin1310",
 };
-
-/* Init */
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
 
-/* Login */
+var auth = firebase.auth();
+var db = firebase.firestore();
+
+// LOGIN
 function login(){
-  auth.signInWithEmailAndPassword(email.value, password.value)
-  .then(()=>{
-    loginBox.style.display="none";
-    panel.style.display="block";
-  })
-  .catch(e=>alert(e.message));
+auth.signInWithEmailAndPassword(email.value,password.value)
+.then(()=>{
+loginBox.style.display="none";
+panel.style.display="block";
+loadData();
+})
+.catch(e=>alert(e.message));
 }
 
-/* Save Data */
-function saveData(){
-  db.collection("customers").add({
-    name: c_name.value,
-    package: c_package.value,
-    month: c_month.value,
-    amount: Number(c_amount.value),
-    phone: c_phone.value,
-    address: c_address.value,
-    time: new Date()
-  }).then(()=>{
-    alert("Data Saved");
-    c_name.value="";
-    c_package.value="";
-    c_month.value="";
-    c_amount.value="";
-    c_phone.value="";
-    c_address.value="";
-  }).catch(e=>alert(e.message));
+// SAVE CUSTOMER
+function saveCustomer(){
+db.collection("customers").add({
+name:name.value,
+phone:phone.value,
+address:address.value,
+package:package.value,
+month:month.value,
+amount:amount.value,
+status:status.value,
+time:new Date()
+}).then(()=>{
+alert("Customer Added");
+loadData();
+});
+}
+
+// LOAD DATA
+function loadData(){
+table.innerHTML=`<tr>
+<th>Name</th><th>Pkg</th><th>Month</th><th>Amt</th><th>Status</th>
+</tr>`;
+db.collection("customers").orderBy("time","desc").get()
+.then(snap=>{
+snap.forEach(d=>{
+let x=d.data();
+table.innerHTML+=`
+<tr>
+<td>${x.name}</td>
+<td>${x.package}</td>
+<td>${x.month}</td>
+<td>${x.amount}</td>
+<td>${x.status}</td>
+</tr>`;
+});
+});
 }
 </script>
 
